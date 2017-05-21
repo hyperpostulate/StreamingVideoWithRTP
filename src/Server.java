@@ -1,5 +1,3 @@
-package org.mesutormanli.StreamingVideoWithRTP;
-
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,14 +21,14 @@ import javax.swing.Timer;
 //Server. Usage: java Server [RTSP listening port]
 public class Server extends JFrame implements ActionListener {
 
+	private static final long serialVersionUID = -4326807794498428197L;
+	
 	// RTP variables:
-	DatagramSocket RTPsocket; // socket to be used to send and receive UDP
-								// packets
+	DatagramSocket RTPsocket; // socket to be used to send and receive UDP packets
 	DatagramPacket senddp; // UDP packet containing the video frames
 
 	InetAddress ClientIPAddr; // Client IP address
-	int RTP_dest_port = 0; // destination port for RTP packets (given by the
-							// RTSP Client)
+	int RTP_dest_port = 0; // destination port for RTP packets (given by the RTSP Client)
 
 	// GUI:
 	JLabel label;
@@ -55,10 +53,10 @@ public class Server extends JFrame implements ActionListener {
 	final static int PLAY = 4;
 	final static int PAUSE = 5;
 	final static int TEARDOWN = 6;
+	final static int DESCRIBE = 7;
 
 	static int state; // RTSP Server state == INIT or READY or PLAY
-	Socket RTSPsocket; // socket used to send/receive RTSP messages
-	// input and output stream filters
+	Socket RTSPsocket; // socket used to send/receive RTSP messages input and output stream filters
 	static BufferedReader RTSPBufferedReader;
 	static BufferedWriter RTSPBufferedWriter;
 	static String VideoFileName; // video file requested from the client
@@ -143,6 +141,8 @@ public class Server extends JFrame implements ActionListener {
 
 				// init RTP socket
 				theServer.RTPsocket = new DatagramSocket();
+			} else if(request_type == DESCRIBE){
+				theServer.send_describe_response();
 			}
 		}
 
@@ -178,6 +178,10 @@ public class Server extends JFrame implements ActionListener {
 
 				System.exit(0);
 			}
+			else if(request_type == DESCRIBE){
+				theServer.send_describe_response();
+				continue;
+			}
 		}
 	}
 
@@ -208,7 +212,7 @@ public class Server extends JFrame implements ActionListener {
 				senddp = new DatagramPacket(packet_bits, packet_length, ClientIPAddr, RTP_dest_port);
 				RTPsocket.send(senddp);
 
-				// System.out.println("Send frame #"+imagenb);
+				System.out.println("Send frame #" + imagenb);
 				// print the header bitstream
 				rtp_packet.printheader();
 
@@ -230,7 +234,7 @@ public class Server extends JFrame implements ActionListener {
 		try {
 			// parse request line and extract the request_type:
 			String RequestLine = RTSPBufferedReader.readLine();
-			// System.out.println("RTSP Server - Received from Client:");
+			System.out.println("RTSP Server - Received from Client:");
 			System.out.println(RequestLine);
 
 			StringTokenizer tokens = new StringTokenizer(RequestLine);
@@ -245,6 +249,8 @@ public class Server extends JFrame implements ActionListener {
 				request_type = PAUSE;
 			else if ((new String(request_type_string)).compareTo("TEARDOWN") == 0)
 				request_type = TEARDOWN;
+			else if ((new String(request_type_string)).compareTo("DESCRIBE") == 0)
+				request_type = DESCRIBE;
 
 			if (request_type == SETUP) {
 				// extract VideoFileName from RequestLine
@@ -269,8 +275,7 @@ public class Server extends JFrame implements ActionListener {
 					tokens.nextToken(); // skip unused stuff
 				RTP_dest_port = Integer.parseInt(tokens.nextToken());
 			}
-			// else LastLine will be the SessionId line ... do not check for
-			// now.
+			// else LastLine will be the SessionId line ... do not check for now.
 		} catch (Exception ex) {
 			System.out.println("Exception caught: " + ex);
 			System.exit(0);
@@ -285,10 +290,28 @@ public class Server extends JFrame implements ActionListener {
 			RTSPBufferedWriter.write("CSeq: " + RTSPSeqNb + CRLF);
 			RTSPBufferedWriter.write("Session: " + RTSP_ID + CRLF);
 			RTSPBufferedWriter.flush();
-			// System.out.println("RTSP Server - Sent response to Client.");
+			System.out.println("RTSP Server - Sent response to Client.");
 		} catch (Exception ex) {
-			System.out.println("Exception caught: " + ex);
+			System.out.println("Exception caught: " + ex.getMessage());
 			System.exit(0);
 		}
+	}
+	private void send_describe_response(){
+		try{
+		RTSPBufferedWriter.write("RTSP/1.0 200 OK" + CRLF);
+		RTSPBufferedWriter.write("CSeq: " + RTSPSeqNb + CRLF);
+		RTSPBufferedWriter.write("Session: " + RTSP_ID + CRLF);
+		RTSPBufferedWriter.write("Used Stream Type: Custom \"VideoStream\" type with " + VIDEO_LENGTH + " frames and " + FRAME_PERIOD + " frame period." + CRLF);
+		RTSPBufferedWriter.write("Used Encoding Type: " + MJPEG_TYPE + " [MJPEG]" + CRLF);
+				RTSPBufferedWriter.flush();
+		System.out.println("RTSP Server - Sent response to Client.");
+		
+		
+		
+		} catch (Exception ex) {
+			System.out.println("Exception caught: " + ex.getMessage());
+			System.exit(0);
+		}
+		
 	}
 }

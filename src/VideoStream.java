@@ -1,5 +1,3 @@
-package org.mesutormanli.StreamingVideoWithRTP;
-
 import java.io.FileInputStream;
 
 public class VideoStream {
@@ -15,8 +13,7 @@ public class VideoStream {
 		frame_nb = 0;
 	}
 
-	// getnextframe: returns the next frame as an array of byte and the size of
-	// the frame
+	// getnextframe: returns the next frame as an array of byte and the size of the frame
 	public int getnextframe(byte[] frame) throws Exception {
 		int length = 0;
 		String length_string;

@@ -1,5 +1,3 @@
-package org.mesutormanli.StreamingVideoWithRTP;
-
 public class RTPpacket {
 
 	// size of the RTP header:
@@ -24,8 +22,7 @@ public class RTPpacket {
 	// Bitstream of the RTP payload
 	public byte[] payload;
 
-	// Constructor of an RTPpacket object from header fields and payload
-	// bitstream
+	// Constructor of an RTPpacket object from header fields and payload bitstream
 	public RTPpacket(int PType, int Framenb, int Time, byte[] data, int data_length) {
 		// fill by default header fields:
 		Version = 2;
@@ -43,25 +40,45 @@ public class RTPpacket {
 		// build the header bistream:
 		header = new byte[HEADER_SIZE];
 
-		// TODO:
-		// fill the header array of byte with RTP header fields
 
-		// header[0] = ...
-		// .....
+		// Write version
+		header[0] = (byte) (Version << 6);
+
+		// Skip padding extension cc marker
+
+		// Write payload type
+		header[1] = (byte) (PType & 0b01111011);
+
+		// Write sequence number
+		header[2] = (byte) (SequenceNumber >> 8);
+		header[3] = (byte) (SequenceNumber & 0b11111111);
+
+		// Write timestamp
+		header[4] = (byte) (TimeStamp >> 24);
+		header[5] = (byte) (TimeStamp >> 16);
+		header[6] = (byte) (TimeStamp >> 8);
+		header[7] = (byte) (TimeStamp & 0b11111111);
+
+		// Write ssrc
+		header[8] = (byte) (0b00000000);
+		header[9] = (byte) (0b00000000);
+		header[10] = (byte) (0b00000000);
+		header[11] = (byte) (0b00000000);
 
 		// fill the payload bitstream:
 		payload_size = data_length;
 		payload = new byte[data_length];
 
-		// fill payload array of byte from data (given in parameter of the
-		// constructor)
-		// ......
+		// fill payload array of byte from data (given in parameter of the constructor)
+		for (int i = 0; i < data_length; i++) {
+			payload[i] = data[i];
+		}
 
 		// ! Do not forget to uncomment method printheader() below !
 
 	}
 
-	// Constructor of an RTPpacket object from the packet bistream
+	// Constructor of an RTPpacket object from the packet bitstream
 	public RTPpacket(byte[] packet, int packet_size) {
 		// fill default fields:
 		Version = 2;
@@ -136,14 +153,16 @@ public class RTPpacket {
 	}
 
 	public void printheader() {
-		// TODO: uncomment
-		/*
-		 * for (int i=0; i < (HEADER_SIZE-4); i++) { for (int j = 7; j>=0 ; j--)
-		 * if (((1<<j) & header[i] ) != 0) System.out.print("1"); else
-		 * System.out.print("0"); System.out.print(" "); }
-		 * 
-		 * System.out.println();
-		 */
+
+		for (int i = 0; i < (HEADER_SIZE - 4); i++) {
+			for (int j = 7; j >= 0; j--)
+				if (((1 << j) & header[i]) != 0)
+					System.out.print("1");
+				else
+					System.out.print("0");
+			System.out.print(" ");
+		}
+		System.out.println();
 	}
 
 	// return the unsigned value of 8-bit integer nb
